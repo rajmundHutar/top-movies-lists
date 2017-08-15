@@ -1,0 +1,20 @@
+{block content}
+<table>
+	<tr n:foreach="$list as $movie">
+		<td>
+			{$movie['csfdTitle'] ?? null}
+			{$movie['imdbTitle'] ?? null}
+		</td>
+		<td>
+			{$movie['csfdYear'] ?? null}
+			{$movie['imdbYear'] ?? null}
+		</td>
+		<td>
+			{$movie['title'] ?? null}
+		</td>
+		<td>
+			{$movie['original_title'] ?? null}
+		</td>
+		<td>{isset($movie['release_date']) ? $movie['release_date']|date:"Y" : null}</td>
+	</tr>
+</table>
