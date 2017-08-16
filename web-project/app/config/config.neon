@@ -15,3 +15,4 @@ services:
 	router: App\RouterFactory::createRouter
 	- App\Model\MoviesListModel
 	- App\Model\TheMovieDbApi(%theMovieDbApi%)
+	- App\Model\UserModel

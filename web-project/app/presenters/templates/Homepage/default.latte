@@ -7,3 +7,9 @@
 <br>
 <div>Get data from CSFD</div>
 <div>Get data from theMovieDb</div>
+
+{if isset($userData['sessionId'])}
+	<div>Uživatel je přihlášen do theMovieDb.org</div>
+{else}
+	<div><a n:href='TheMovieDb:Login'>Login to theMovieDb.org</a></div>
+{/if}

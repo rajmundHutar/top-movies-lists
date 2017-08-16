@@ -2,15 +2,21 @@
 
 namespace App\Model;
 
+use Nette\UnexpectedValueException;
 use Nette\Utils\DateTime;
 
 class TheMovieDbApi {
 
 	use CacheTrait;
 
-	const BASE_URL = "https://api.themoviedb.org/3/";
 	/** @var string */
 	protected $apiKey;
+
+	const BASE_URL = "https://api.themoviedb.org/3/";
+	const KNOWN_MOVIES = [
+		'Nae meorisogui jiugae' => '15859',
+		'Kristián' => '50795',
+	];
 
 	public function __construct($apiKey) {
 		$this->apiKey = $apiKey;
@@ -52,6 +58,12 @@ class TheMovieDbApi {
 
 	public function searchMovie($query) {
 
+		if (isset(self::KNOWN_MOVIES[$query])) {
+			return [
+				'results' => [$this->movie(self::KNOWN_MOVIES[$query])],
+			];
+		}
+
 		$key = "search-{$query}";
 		$cache = $this->getCache('theMovieDb');
 
@@ -86,7 +98,7 @@ class TheMovieDbApi {
 				return $result;
 			}
 			// If matches based on year save for later
-			if ($movieYear == $year) {
+			if ($movieYear == $year && !$possibleCandidateByYear) {
 				$possibleCandidateByYear = $result;
 			}
 		}
@@ -101,6 +113,60 @@ class TheMovieDbApi {
 		}
 
 		return [];
+
+	}
+
+	public function movie($movieId) {
+
+		$key = "movie-{$movieId}";
+		$cache = $this->getCache('theMovieDb');
+
+		if (($data = $cache->load($key)) === null) {
+
+			$queryData = [
+				"api_key" => $this->apiKey,
+			];
+			$url = self::BASE_URL . "movie/{$movieId}?" . http_build_query($queryData);
+
+			$content = file_get_contents($url);
+			$data = json_decode($content, true);
+			$cache->save($key, $data, [
+				$cache::EXPIRE => '1 hours',
+			]);
+		}
+
+		return $data;
+
+	}
+
+	public function createRequestToken() {
+
+		$queryData = [
+			"api_key" => $this->apiKey,
+		];
+		$url = self::BASE_URL . "authentication/token/new?" . http_build_query($queryData);
+		$content = file_get_contents($url);
+		$data = json_decode($content, true);
+
+		if (isset($data['request_token'])){
+			return $data['request_token'];
+		}
+
+		throw new UnexpectedValueException('Can\'t create request token');
+
+	}
+
+	public function createSessionId($requestToken) {
+
+		$queryData = [
+			"api_key" => $this->apiKey,
+			"request_token" => $requestToken,
+		];
+
+		$url = self::BASE_URL . "authentication/session/new?" . http_build_query($queryData);
+		$content = file_get_contents($url);
+		$data = json_decode($content, true);
+		return $data['session_id'];
 
 	}
 
