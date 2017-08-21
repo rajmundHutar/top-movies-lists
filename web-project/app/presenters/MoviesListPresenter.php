@@ -38,6 +38,9 @@ class MoviesListPresenter extends Presenter {
 			case "csfd":
 				$list = $this->moviesListModel->getCsfdList();
 				break;
+			case "bbc21Century":
+				$list = $this->moviesListModel->getBbc21CenturyList();
+				break;
 			default:
 				throw new InvalidArgumentException("Dont know list " . $listName);
 		}
@@ -60,6 +63,9 @@ class MoviesListPresenter extends Presenter {
 				break;
 			case "csfd":
 				$list = $this->moviesListModel->getCsfdList();
+				break;
+			case "bbc21Century":
+				$list = $this->moviesListModel->getBbc21CenturyList();
 				break;
 			default:
 				throw new InvalidArgumentException("Dont know list " . $id);

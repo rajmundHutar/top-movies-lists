@@ -150,4 +150,55 @@ class MoviesListModel {
 
 	}
 
+	public function prepareBbc21CenturyList() {
+
+		$content = file_get_contents(__DIR__ . "/../data/BbcGreatestFilms.txt");
+		$content = explode(PHP_EOL, $content);
+		$content = array_reverse($content);
+
+		if (!$content || !is_array($content)) {
+			throw new UnexpectedValueException('Loaded list from app/data/BbcGreatestFilms.txt is corrupted');
+		}
+
+		$movies = [];
+		foreach ($content as $line) {
+
+			preg_match('~^([0-9]+)..([^\(]*) \((.*)\,.([0-9]{4})\)~i', $line, $matches);
+
+			$movies[] = [
+				'bbc21CenturyOrder' => $matches[1],
+				'bbc21CenturyTitle' => $matches[2],
+				'bbc21CenturyYear' => $matches[4],
+			];
+
+		}
+
+		// Walk through and check on theMovieDb
+		foreach ($movies as $id => $movie) {
+			$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['bbc21CenturyTitle'], $movie['bbc21CenturyYear']);
+			$movies[$id] = $tMDMovie + $movie;
+		}
+
+		$cache = $this->getCache('bbcList');
+		// Save into DB or JSON or Cache
+		$cache->save('completeList', $movies, [
+			$cache::EXPIRE => '100 days',
+		]);
+
+		return $movies;
+
+	}
+
+	public function getBbc21CenturyList() {
+
+		$cache = $this->getCache('bbcList');
+		$data = $cache->load('completeList');
+		if (!$data) {
+			$data = $this->prepareBbc21CenturyList();
+		}
+
+		return $data;
+
+	}
+
 }
