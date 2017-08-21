@@ -1,0 +1,24 @@
+{block content}
+<a n:href="Homepage:">Back</a>
+<h1>Seen: {count($listSeenIds)}/{count($list)}</h1>
+
+<table>
+	<tr>
+		<th></th>
+		<th>ID:</th>
+		<th>Title:</th>
+		<th></th>
+	</tr>
+	<tr n:foreach="$list as $movie">
+		<td><img src="https://image.tmdb.org/t/p/w92/{$movie['poster_path']}"></td>
+		<td>{$movie['id']}</td>
+		<td>{$movie['title']} ({$movie['release_date']|date:"Y"})</td>
+		<td>
+			{if isset($listSeenIds[$movie['id']])}
+				SEEN - rating: {$seenMovies[$movie['id']]['rating']}
+			{else}
+				--
+			{/if}
+		</td>
+	</tr>
+</table>

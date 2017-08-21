@@ -9,14 +9,14 @@ class TheMovieDbApi {
 
 	use CacheTrait;
 
-	/** @var string */
-	protected $apiKey;
-
 	const BASE_URL = "https://api.themoviedb.org/3/";
 	const KNOWN_MOVIES = [
 		'Nae meorisogui jiugae' => '15859',
 		'Kristián' => '50795',
+		'Yi Yi: A One and a Two' => '25538',
 	];
+	/** @var string */
+	protected $apiKey;
 
 	public function __construct($apiKey) {
 		$this->apiKey = $apiKey;
@@ -94,7 +94,7 @@ class TheMovieDbApi {
 		foreach ($results['results'] as $result) {
 			$movieYear = (new DateTime($result['release_date']))->format('Y');
 			// If matches title or original title and year return immediately
-			if (($result['title'] == $movie || $result['original_title'] == $movie) && $movieYear == $year){
+			if (($result['title'] == $movie || $result['original_title'] == $movie) && $movieYear == $year) {
 				return $result;
 			}
 			// If matches based on year save for later
@@ -108,7 +108,7 @@ class TheMovieDbApi {
 		}
 
 		// If nothing match return first
-		if ($results['results']){
+		if ($results['results']) {
 			return array_shift($results['results']);
 		}
 
@@ -148,7 +148,7 @@ class TheMovieDbApi {
 		$content = file_get_contents($url);
 		$data = json_decode($content, true);
 
-		if (isset($data['request_token'])){
+		if (isset($data['request_token'])) {
 			return $data['request_token'];
 		}
 
@@ -167,6 +167,45 @@ class TheMovieDbApi {
 		$content = file_get_contents($url);
 		$data = json_decode($content, true);
 		return $data['session_id'];
+
+	}
+
+	public function getAccountRatedMovies($sessionId) {
+
+		$key = "account-rated-movies-{$sessionId}";
+		$cache = $this->getCache('theMovieDb');
+
+		if (($results = $cache->load($key)) === null) {
+
+			$page = 1;
+			$results = [];
+
+			do {
+
+				$queryData = [
+					"api_key" => $this->apiKey,
+					"session_id" => $sessionId,
+					"page" => $page,
+				];
+
+				$url = self::BASE_URL . "account/account/rated/movies?" . http_build_query($queryData);
+				$content = file_get_contents($url);
+				$data = json_decode($content, true);
+
+				foreach ($data['results'] as $value) {
+					$results[$value['id']] = $value;
+				}
+
+				$totalPages = $data['total_pages'];
+				$page++;
+			} while ($page <= $totalPages);
+
+			$cache->save($key, $results, [
+				$cache::EXPIRE => '24 hours',
+			]);
+		}
+
+		return $results;
 
 	}
 

@@ -1,15 +1,37 @@
 {block content}
-<div>Top IMDb 250 <a n:href="MoviesList:prepare, id => 'imdb'">prepare</a></div>
-<div>Top ČSFD 300 <a n:href="MoviesList:prepare, id => 'csfd'">prepare</a></div>
-<div>1001 filmů které musíte videt nez zemrete <a n:href="MoviesList:prepare, id => 'mustSeeBeforeDie'">prepare</a></div>
-<div>Legendární filmy <a n:href="MoviesList:prepare, id => 'legendaryMovies'">prepare</a></div>
-<div>The 21st Century’s 100 greatest films (BBC) <a n:href="MoviesList:prepare, id => 'bbc21Century'">prepare</a></div>
+<div>
+	Top IMDb 250
+	<a n:href="MoviesList:prepare, id => 'imdb'">prepare</a>
+	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => 'imdb'">user list</a>
+</div>
+<div>
+	Top ČSFD 300
+	<a n:href="MoviesList:prepare, id => 'csfd'">prepare</a>
+	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => 'csfd'">user list</a>
+</div>
+<div>
+	The 21st Century’s 100 greatest films (BBC)
+	<a n:href="MoviesList:prepare, id => 'bbc21Century'">prepare</a>
+	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => 'bbc21Century'">user list</a>
+</div>
+
+
+
+<div>
+	1001 filmů které musíte videt nez zemrete
+	<a n:href="MoviesList:prepare, id => 'mustSeeBeforeDie'">prepare</a>
+</div>
+<div>
+	Legendární filmy
+	<a n:href="MoviesList:prepare, id => 'legendaryMovies'">prepare</a>
+</div>
+
 <br>
 <div>Get data from CSFD</div>
-<div>Get data from theMovieDb</div>
 
 {if isset($userData['sessionId'])}
 	<div>Uživatel je přihlášen do theMovieDb.org</div>
+	<div>Getting data from theMovieDb</div>
 {else}
 	<div><a n:href='TheMovieDb:Login'>Login to theMovieDb.org</a></div>
 {/if}

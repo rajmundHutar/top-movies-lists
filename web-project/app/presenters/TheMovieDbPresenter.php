@@ -3,6 +3,7 @@
 namespace App\Presenters;
 
 use App\Model\CacheTrait;
+use App\Model\MoviesListModel;
 use App\Model\TheMovieDbApi;
 use App\Model\UserModel;
 use Nette\Application\UI\Presenter;
@@ -12,19 +13,19 @@ class TheMovieDbPresenter extends Presenter {
 
 	use CacheTrait;
 
-	/** @var TheMovieDbApi  */
+	/** @var TheMovieDbApi */
 	protected $theMovieDbApi;
 
-	/** @var UserModel  */
+	/** @var UserModel */
 	protected $userModel;
 
-	public function __construct(TheMovieDbApi $theMovieDbApi, UserModel $userModel) {
+	/** @var MoviesListModel */
+	protected $moviesListModel;
+
+	public function __construct(TheMovieDbApi $theMovieDbApi, UserModel $userModel, MoviesListModel $moviesListModel) {
 		$this->theMovieDbApi = $theMovieDbApi;
 		$this->userModel = $userModel;
-	}
-
-	public function renderDefault() {
-		
+		$this->moviesListModel = $moviesListModel;
 	}
 
 	public function actionLogin() {

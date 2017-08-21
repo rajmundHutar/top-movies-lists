@@ -1,6 +1,8 @@
 {block content}
+<a n:href="Homepage:">Zpět</a>
 <table>
-	<tr n:foreach="$list as $movie">
+	<tr n:foreach="$list as $id => $movie">
+		<td>{=$id+1}</td>
 		<td>
 			{$movie['csfdTitle'] ?? null}
 			{$movie['imdbTitle'] ?? null}

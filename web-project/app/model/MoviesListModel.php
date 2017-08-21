@@ -51,7 +51,7 @@ class MoviesListModel {
 			}
 
 			$cache->save($key, $movies, [
-				$cache::EXPIRE => '1 hours',
+				$cache::EXPIRE => '24 hours',
 			]);
 
 		}
@@ -118,7 +118,7 @@ class MoviesListModel {
 			}
 
 			$cache->save($key, $movies, [
-				$cache::EXPIRE => '1 hours',
+				$cache::EXPIRE => '24 hours',
 			]);
 
 		}
