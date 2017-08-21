@@ -59,6 +59,9 @@ class MoviesListModel {
 		// Walk through and check on theMovieDb
 		foreach ($movies as $id => $movie) {
 			$tMDMovie = $this->theMovieDbApi->findOneMovie($movie['imdbId']);
+			if (!$tMDMovie) {
+				dump('Can\'t load:', $movie);
+			}
 			$movies[$id] = $tMDMovie + $movie;
 		}
 
@@ -126,6 +129,9 @@ class MoviesListModel {
 		// Walk through and check on theMovieDb
 		foreach ($movies as $id => $movie) {
 			$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['csfdTitle'], $movie['csfdYear']);
+			if (!$tMDMovie) {
+				dump('Can\'t load:', $movie);
+			}
 			$movies[$id] = $tMDMovie + $movie;
 		}
 
@@ -176,6 +182,9 @@ class MoviesListModel {
 		// Walk through and check on theMovieDb
 		foreach ($movies as $id => $movie) {
 			$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['bbc21CenturyTitle'], $movie['bbc21CenturyYear']);
+			if (!$tMDMovie) {
+				dump('Can\'t load:', $movie);
+			}
 			$movies[$id] = $tMDMovie + $movie;
 		}
 
@@ -195,6 +204,82 @@ class MoviesListModel {
 		$data = $cache->load('completeList');
 		if (!$data) {
 			$data = $this->prepareBbc21CenturyList();
+		}
+
+		return $data;
+
+	}
+
+	/**
+	 * @return array
+	 */
+	public function prepareMustSeeBeforeDieList(): array {
+
+		$opts = [
+			'http' => [
+				'method' => 'GET',
+				'header' => "Accept-language: en",
+			],
+		];
+
+		$context = stream_context_create($opts);
+
+		$content = file_get_contents('http://1001films.wikia.com/wiki/The_List', false, $context);
+		$content = preg_replace('~\n~i', "", $content);
+
+		preg_match_all('~<li><b>(<a.*?>)?([^\(]*?)(\(([^\)]+)\))? ?(\(([0-9]{4})\))?(<\/a>)?<\/b><\/li~i', $content, $matches);
+
+		if (empty($matches[2])) {
+			throw new UnexpectedValueException('Loaded list from 1001films.wikia.com is empty');
+		}
+
+		$movies = [];
+		foreach ($matches[2] as $key => $title) {
+
+			$movies[$key] = [
+				'msbdId' => $key + 1,
+				'msbdTitle' => html_entity_decode(trim($title)),
+				'msbdOriginalTitle' => trim($matches[4][$key]),
+				'msbdYear' => trim($matches[6][$key]),
+			];
+		}
+
+		$movies = array_reverse($movies);
+
+		// Walk through and check on theMovieDb
+		foreach ($movies as $id => $movie) {
+			$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['msbdTitle'], $movie['msbdYear']);
+			if (!$tMDMovie && $movie['msbdOriginalTitle']) {
+				$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['msbdOriginalTitle'], $movie['msbdYear']);
+			}
+
+			if (!$tMDMovie) {
+				dump('Can\'t load:', $movie);
+			}
+
+			$movies[$id] = $tMDMovie + $movie;
+		}
+
+		return $movies;
+
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getMustSeeBeforeDieList(): array {
+
+		$cache = $this->getCache('msbdList');
+
+		$data = $cache->load('completeList');
+		if (!$data) {
+
+			$data = $this->prepareMustSeeBeforeDieList();
+			// Save into DB or JSON or Cache
+			$cache->save('completeList', $data, [
+				$cache::EXPIRE => '10 days',
+			]);
+
 		}
 
 		return $data;

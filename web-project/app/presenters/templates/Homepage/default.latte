@@ -19,7 +19,8 @@
 
 <div>
 	1001 filmů které musíte videt nez zemrete
-	<a n:href="MoviesList:prepare, id => 'mustSeeBeforeDie'">prepare</a>
+	<a n:href="MoviesList:prepare, id => 'msbd'">prepare</a>
+	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => 'msbd'">user list</a>
 </div>
 <div>
 	Legendární filmy

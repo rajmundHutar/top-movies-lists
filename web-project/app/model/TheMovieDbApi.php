@@ -14,6 +14,11 @@ class TheMovieDbApi {
 		'Nae meorisogui jiugae' => '15859',
 		'Kristián' => '50795',
 		'Yi Yi: A One and a Two' => '25538',
+		'Great Epectations' => '14320',
+		'Whiskey Galore!' => '16665',
+		'The Fireman\'s Ball' => '38442',
+		'Pink Flamingoes' => '692',
+
 	];
 	/** @var string */
 	protected $apiKey;
