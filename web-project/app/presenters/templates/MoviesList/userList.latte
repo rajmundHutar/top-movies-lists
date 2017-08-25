@@ -10,9 +10,13 @@
 		<th></th>
 	</tr>
 	<tr n:foreach="$list as $movie">
+		{dump $movie}
 		<td><img src="https://image.tmdb.org/t/p/w92/{$movie['poster_path']}"></td>
 		<td>{$movie['id']}</td>
-		<td>{$movie['title']} ({$movie['release_date']|date:"Y"})</td>
+		<td>
+			<a href="https://www.themoviedb.org/movie/{$movie['id']}" target="_blank"><h3>{$movie['title']} ({$movie['release_date']|date:"Y"})</h3></a>
+			<p>{$movie['overview']}</p>
+		</td>
 		<td>
 			{if isset($listSeenIds[$movie['id']])}
 				SEEN - rating: {$seenMovies[$movie['id']]['rating']}
