@@ -18,6 +18,7 @@ class TheMovieDbApi {
 		'Whiskey Galore!' => '16665',
 		'The Fireman\'s Ball' => '38442',
 		'Pink Flamingoes' => '692',
+		'Sullivan’s Travels' => '16305',
 
 	];
 	/** @var string */

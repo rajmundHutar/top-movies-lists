@@ -210,6 +210,56 @@ class MoviesListModel {
 
 	}
 
+	public function prepareBbcComediesList() {
+		$content = file_get_contents(__DIR__ . "/../data/BbcGreatestComedies.txt");
+		$content = explode(PHP_EOL, $content);
+		$content = array_reverse($content);
+
+		if (!$content || !is_array($content)) {
+			throw new UnexpectedValueException('Loaded list from app/data/BbcGreatestComedies.txt is corrupted');
+		}
+
+		$movies = [];
+		foreach ($content as $line) {
+
+			preg_match('~^([0-9]+)..([^\(]*) \((.*)\,.([0-9]{4})\)~i', $line, $matches);
+
+			$movies[] = [
+				'bbcComediesOrder' => $matches[1],
+				'bbcComediesTitle' => $matches[2],
+				'bbcComediesYear' => $matches[4],
+			];
+
+		}
+
+		// Walk through and check on theMovieDb
+		foreach ($movies as $id => $movie) {
+			$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['bbcComediesTitle'], $movie['bbcComediesYear']);
+			if (!$tMDMovie) {
+				dump('Can\'t load:', $movie);
+			}
+			$movies[$id] = $tMDMovie + $movie;
+		}
+
+		$cache = $this->getCache('bbcList');
+		// Save into DB or JSON or Cache
+		$cache->save('completeListComedies', $movies, [
+			$cache::EXPIRE => '100 days',
+		]);
+
+		return $movies;
+	}
+
+	public function getBbcComediesList() {
+		$cache = $this->getCache('bbcList');
+		$data = $cache->load('completeListComedies');
+		if (!$data) {
+			$data = $this->prepareBbcComediesList();
+		}
+
+		return $data;
+	}
+
 	/**
 	 * @return array
 	 */

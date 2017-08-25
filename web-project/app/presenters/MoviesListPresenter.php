@@ -41,6 +41,9 @@ class MoviesListPresenter extends Presenter {
 			case "bbc21Century":
 				$list = $this->moviesListModel->getBbc21CenturyList();
 				break;
+			case "bbcComedies":
+				$list = $this->moviesListModel->getBbcComediesList();
+				break;
 			case "msbd":
 				$list = $this->moviesListModel->getMustSeeBeforeDieList();
 				break;
@@ -69,6 +72,9 @@ class MoviesListPresenter extends Presenter {
 				break;
 			case "bbc21Century":
 				$list = $this->moviesListModel->getBbc21CenturyList();
+				break;
+			case "bbcComedies":
+				$list = $this->moviesListModel->getBbcComediesList();
 				break;
 			case "msbd":
 				$list = $this->moviesListModel->getMustSeeBeforeDieList();
