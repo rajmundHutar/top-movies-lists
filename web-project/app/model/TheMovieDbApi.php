@@ -19,6 +19,7 @@ class TheMovieDbApi {
 		'The Fireman\'s Ball' => '38442',
 		'Pink Flamingoes' => '692',
 		'Sullivan’s Travels' => '16305',
+		'Ruróni Kenšin: Meidži kenkaku rómantan – Cuioku hen' => '127533',
 
 	];
 	/** @var string */
@@ -85,7 +86,7 @@ class TheMovieDbApi {
 			$content = file_get_contents($url);
 			$data = json_decode($content, true);
 			$cache->save($key, $data, [
-				$cache::EXPIRE => '1 hours',
+				$cache::EXPIRE => '10 days',
 			]);
 		}
 
@@ -137,7 +138,7 @@ class TheMovieDbApi {
 			$content = file_get_contents($url);
 			$data = json_decode($content, true);
 			$cache->save($key, $data, [
-				$cache::EXPIRE => '1 hours',
+				$cache::EXPIRE => '10 days',
 			]);
 		}
 

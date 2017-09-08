@@ -1,31 +1,23 @@
 {block content}
 <div>
 	Top IMDb 250
-	<a n:href="MoviesList:prepare, id => 'imdb'">prepare</a>
-	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => 'imdb'">user list</a>
+	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => \App\Model\MoviesListModel::IMDB_LIST">user list</a>
 </div>
 <div>
 	Top ČSFD 300
-	<a n:href="MoviesList:prepare, id => 'csfd'">prepare</a>
-	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => 'csfd'">user list</a>
+	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => \App\Model\MoviesListModel::CSFD_LIST">user list</a>
 </div>
 <div>
 	The 21st Century’s 100 greatest films (BBC)
-	<a n:href="MoviesList:prepare, id => 'bbc21Century'">prepare</a>
-	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => 'bbc21Century'">user list</a>
+	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => \App\Model\MoviesListModel::BBC_TOP_21_CENTURY_LIST">user list</a>
 </div>
 <div>
 	The 100 greatest comedies of all time (BBC)
-	<a n:href="MoviesList:prepare, id => 'bbcComedies'">prepare</a>
-	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => 'bbcComedies'">user list</a>
+	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => \App\Model\MoviesListModel::BBC_TOP_COMEDIES_LIST">user list</a>
 </div>
-
-
-
 <div>
 	1001 filmů které musíte videt nez zemrete
-	<a n:href="MoviesList:prepare, id => 'msbd'">prepare</a>
-	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => 'msbd'">user list</a>
+	<a n:if="isset($userData['sessionId'])" n:href="MoviesList:userList, userId => 1, listName => \App\Model\MoviesListModel::MSBD_LIST">user list</a>
 </div>
 <div>
 	Legendární filmy

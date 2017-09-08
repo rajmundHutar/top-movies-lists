@@ -11,14 +11,16 @@
 	</tr>
 	<tr n:foreach="$list as $movie">
 		{dump $movie}
-		<td><img src="https://image.tmdb.org/t/p/w92/{$movie['poster_path']}"></td>
-		<td>{$movie['id']}</td>
+		<td><img n:if="isset($movie['poster_path'])" src="https://image.tmdb.org/t/p/w92/{$movie['poster_path']}"></td>
+		<td>{$movie['id'] ?? $movie['originalId']}</td>
 		<td>
-			<a href="https://www.themoviedb.org/movie/{$movie['id']}" target="_blank"><h3>{$movie['title']} ({$movie['release_date']|date:"Y"})</h3></a>
-			<p>{$movie['overview']}</p>
+			<a n:tag-if="isset($movie['id'])" href="https://www.themoviedb.org/movie/{$movie['id']}" target="_blank">
+				<h3>{$movie['title'] ?? $movie['originalTitle']} ({isset($movie['release_date']) ? $movie['release_date']|date:"Y" : $movie['originalYear']})</h3>
+			</a>
+			<p>{$movie['overview'] ?? null}</p>
 		</td>
 		<td>
-			{if isset($listSeenIds[$movie['id']])}
+			{if $listSeenIds[$movie['id'] ?? null]}
 				SEEN - rating: {$seenMovies[$movie['id']]['rating']}
 			{else}
 				--

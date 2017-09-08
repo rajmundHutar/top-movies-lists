@@ -31,25 +31,7 @@ class MoviesListPresenter extends Presenter {
 		$seenMovies = $this->theMovieDbApi->getAccountRatedMovies($userData['sessionId']);
 		$seenMoviesIds = $this->getIdsFromList($seenMovies);
 
-		switch ($listName) {
-			case "imdb":
-				$list = $this->moviesListModel->getImdbList();
-				break;
-			case "csfd":
-				$list = $this->moviesListModel->getCsfdList();
-				break;
-			case "bbc21Century":
-				$list = $this->moviesListModel->getBbc21CenturyList();
-				break;
-			case "bbcComedies":
-				$list = $this->moviesListModel->getBbcComediesList();
-				break;
-			case "msbd":
-				$list = $this->moviesListModel->getMustSeeBeforeDieList();
-				break;
-			default:
-				throw new InvalidArgumentException("Dont know list " . $listName);
-		}
+		$list = $this->moviesListModel->getList($listName);
 
 		$listIds = $this->getIdsFromList($list);
 		$listSeenIds = array_intersect($listIds, $seenMoviesIds);;
@@ -63,25 +45,7 @@ class MoviesListPresenter extends Presenter {
 
 	public function renderPrepare($id) {
 
-		switch ($id) {
-			case "imdb":
-				$list = $this->moviesListModel->getImdbList();
-				break;
-			case "csfd":
-				$list = $this->moviesListModel->getCsfdList();
-				break;
-			case "bbc21Century":
-				$list = $this->moviesListModel->getBbc21CenturyList();
-				break;
-			case "bbcComedies":
-				$list = $this->moviesListModel->getBbcComediesList();
-				break;
-			case "msbd":
-				$list = $this->moviesListModel->getMustSeeBeforeDieList();
-				break;
-			default:
-				throw new InvalidArgumentException("Dont know list " . $id);
-		}
+		$list = $this->moviesListModel->getList($id);
 
 		$this->template->list = $list;
 
@@ -89,6 +53,9 @@ class MoviesListPresenter extends Presenter {
 
 	protected function getIdsFromList($list) {
 		return array_map(function ($item) {
+			if (!isset($item['id'])){
+				return null;
+			}
 			return $item['id'];
 		}, $list);
 	}

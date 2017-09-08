@@ -2,11 +2,18 @@
 
 namespace App\Model;
 
+use Nette\InvalidArgumentException;
 use Nette\UnexpectedValueException;
 
 class MoviesListModel {
 
 	use CacheTrait;
+
+	const IMDB_LIST = "imdbTop250";
+	const CSFD_LIST = "csfdTop300";
+	const BBC_TOP_21_CENTURY_LIST = "bbcTop21CenturyList";
+	const BBC_TOP_COMEDIES_LIST = "bbcTopComediesList";
+	const MSBD_LIST = "mustSeeBeforDieList";
 
 	/** @var TheMovieDbApi */
 	protected $theMovieDbApi;
@@ -15,144 +22,110 @@ class MoviesListModel {
 		$this->theMovieDbApi = $theMovieDbApi;
 	}
 
+	public function getList($name) {
+
+		$cache = $this->getCache($name);
+		$data = $cache->load('completeList');
+		if (!$data) {
+			switch ($name) {
+				case self::IMDB_LIST:
+					$data = $this->prepareImdb();
+					break;
+				case self::CSFD_LIST:
+					$data = $this->prepareCsfd();
+					break;
+				case self::BBC_TOP_21_CENTURY_LIST:
+					$data = $this->prepareBbc21CenturyList();
+					break;
+				case self::BBC_TOP_COMEDIES_LIST:
+					$data = $this->prepareBbcComediesList();
+					break;
+				case self::MSBD_LIST:
+					$data = $this->prepareMustSeeBeforeDieList();
+					break;
+				default:
+					throw new InvalidArgumentException("Unknown list " . $name);
+			}
+			$cache->save('completeList', $data, [
+				$cache::EXPIRE => '24 hours',
+			]);
+		}
+
+		return $data;
+	}
+
 	/**
 	 * Loads Top 250 list from IMDB and find this movies on TheMovieDb
 	 */
 	public function prepareImdb() {
 
-		$key = "list";
-		$cache = $this->getCache('imdbTop');
-		if (($movies = $cache->load($key)) === null) {
+		$opts = [
+			'http' => [
+				'method' => 'GET',
+				'header' => "Accept-language: en",
+			],
+		];
 
-			$opts = [
-				'http' => [
-					'method' => 'GET',
-					'header' => "Accept-language: en",
-				],
+		$context = stream_context_create($opts);
+
+		$content = file_get_contents('http://www.imdb.com/chart/top', false, $context);
+		$content = preg_replace('~\n~i', "", $content);
+		preg_match_all('~<tr.*?>.*?<td.*?titleColumn.>.*?<a.*?title\/(.*?)\/.*?>(.*?)<\/a>.*?<span.*?secondaryInfo.>\((.*?)\).*?<\/tr~i', $content, $matches);
+
+		if (empty($matches[1])) {
+			throw new UnexpectedValueException('Loaded list from IMDB.com is empty');
+		}
+
+		$movies = [];
+		foreach ($matches[1] as $key => $originalId) {
+			$movies[$key] = [
+				'originalId' => $originalId,
+				'originalOrder' => $key + 1,
+				'originalTitle' => $matches[2][$key],
+				'originalYear' => $matches[3][$key],
+				'origin' => self::IMDB_LIST,
 			];
-
-			$context = stream_context_create($opts);
-
-			$content = file_get_contents('http://www.imdb.com/chart/top', false, $context);
-			$content = preg_replace('~\n~i', "", $content);
-			preg_match_all('~<tr.*?>.*?<td.*?titleColumn.>.*?<a.*?title\/(.*?)\/.*?>(.*?)<\/a>.*?<span.*?secondaryInfo.>\((.*?)\).*?<\/tr~i', $content, $matches);
-
-			if (empty($matches[1])) {
-				throw new UnexpectedValueException('Loaded list from IMDB.com is empty');
-			}
-
-			$movies = [];
-			foreach ($matches[1] as $key => $imdbId) {
-				$movies[$key] = [
-					'imdbId' => $imdbId,
-					'imdbTitle' => $matches[2][$key],
-					'imdbYear' => $matches[3][$key],
-				];
-			}
-
-			$cache->save($key, $movies, [
-				$cache::EXPIRE => '24 hours',
-			]);
-
 		}
 
-		// Walk through and check on theMovieDb
-		foreach ($movies as $id => $movie) {
-			$tMDMovie = $this->theMovieDbApi->findOneMovie($movie['imdbId']);
-			if (!$tMDMovie) {
-				dump('Can\'t load:', $movie);
-			}
-			$movies[$id] = $tMDMovie + $movie;
-		}
+		return $this->decorateMovies($movies);
 
-		// Save into DB or JSON or Cache
-		$cache->save('completeList', $movies, [
-			$cache::EXPIRE => '24 hours',
-		]);
-
-		return $movies;
-
-	}
-
-	public function getImdbList() {
-		$cache = $this->getCache('imdbTop');
-		$data = $cache->load('completeList');
-		if (!$data) {
-			$data = $this->prepareImdb();
-		}
-
-		return $data;
 	}
 
 	public function prepareCsfd() {
 
-		$key = "list";
-		$cache = $this->getCache('csfdTop');
-		if (($movies = $cache->load($key)) === null) {
-
-			$curl = curl_init();
-			curl_setopt_array($curl, [
-				CURLOPT_URL => "https://www.csfd.cz/zebricky/nejlepsi-filmy/?show=complete",
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_ENCODING => "",
-				CURLOPT_MAXREDIRS => 10,
-				CURLOPT_TIMEOUT => 30,
-				CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-				CURLOPT_CUSTOMREQUEST => "GET",
-				CURLOPT_POSTFIELDS => "{}",
-			]);
-			$content = curl_exec($curl);
-			curl_close($curl);
-
-			$content = preg_replace('~\n~i', "", $content);
-			preg_match_all('~<tr>.*?<td.*?film.*?id=\"chart-(.*?)\".*?<a.*?>(.*?)<\/a>.*?<span.*?film-year.>\((.*?)\).*?<\/tr~i', $content, $matches);
-
-			if (empty($matches[1])) {
-				throw new UnexpectedValueException('Loaded list from CSFD.cz is empty');
-			}
-
-			$movies = [];
-			foreach ($matches[1] as $key => $csfdId) {
-				$movies[$key] = [
-					'csfdId' => $csfdId,
-					'csfdTitle' => $matches[2][$key],
-					'csfdYear' => $matches[3][$key],
-				];
-			}
-
-			$cache->save($key, $movies, [
-				$cache::EXPIRE => '24 hours',
-			]);
-
-		}
-
-		// Walk through and check on theMovieDb
-		foreach ($movies as $id => $movie) {
-			$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['csfdTitle'], $movie['csfdYear']);
-			if (!$tMDMovie) {
-				dump('Can\'t load:', $movie);
-			}
-			$movies[$id] = $tMDMovie + $movie;
-		}
-
-		// Save into DB or JSON or Cache
-		$cache->save('completeList', $movies, [
-			$cache::EXPIRE => '24 hours',
+		$curl = curl_init();
+		curl_setopt_array($curl, [
+			CURLOPT_URL => "https://www.csfd.cz/zebricky/nejlepsi-filmy/?show=complete",
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_ENCODING => "",
+			CURLOPT_MAXREDIRS => 10,
+			CURLOPT_TIMEOUT => 30,
+			CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+			CURLOPT_CUSTOMREQUEST => "GET",
+			CURLOPT_POSTFIELDS => "{}",
 		]);
+		$content = curl_exec($curl);
+		curl_close($curl);
 
-		return $movies;
+		$content = preg_replace('~\n~i', "", $content);
+		preg_match_all('~<tr>.*?<td.*?film.*?id=\"chart-(.*?)\".*?<a.*?>(.*?)<\/a>.*?<span.*?film-year.>\((.*?)\).*?<\/tr~i', $content, $matches);
 
-	}
-
-	public function getCsfdList() {
-
-		$cache = $this->getCache('csfdTop');
-		$data = $cache->load('completeList');
-		if (!$data) {
-			$data = $this->prepareCsfd();
+		if (empty($matches[1])) {
+			throw new UnexpectedValueException('Loaded list from CSFD.cz is empty');
 		}
 
-		return $data;
+		$movies = [];
+		foreach ($matches[1] as $key => $csfdId) {
+			$movies[$key] = [
+				'originalId' => $csfdId,
+				'originalOrder' => $key + 1,
+				'originalTitle' => $matches[2][$key],
+				'originalYear' => $matches[3][$key],
+				'origin' => self::CSFD_LIST,
+			];
+		}
+
+		return $this->decorateMovies($movies);
 
 	}
 
@@ -167,46 +140,21 @@ class MoviesListModel {
 		}
 
 		$movies = [];
-		foreach ($content as $line) {
+		foreach ($content as $key => $line) {
 
 			preg_match('~^([0-9]+)..([^\(]*) \((.*)\,.([0-9]{4})\)~i', $line, $matches);
 
 			$movies[] = [
-				'bbc21CenturyOrder' => $matches[1],
-				'bbc21CenturyTitle' => $matches[2],
-				'bbc21CenturyYear' => $matches[4],
+				'originalId' => $key,
+				'originalOrder' => $matches[1],
+				'originalTitle' => $matches[2],
+				'originalYear' => $matches[4],
+				'origin' => self::BBC_TOP_21_CENTURY_LIST,
 			];
 
 		}
 
-		// Walk through and check on theMovieDb
-		foreach ($movies as $id => $movie) {
-			$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['bbc21CenturyTitle'], $movie['bbc21CenturyYear']);
-			if (!$tMDMovie) {
-				dump('Can\'t load:', $movie);
-			}
-			$movies[$id] = $tMDMovie + $movie;
-		}
-
-		$cache = $this->getCache('bbcList');
-		// Save into DB or JSON or Cache
-		$cache->save('completeList', $movies, [
-			$cache::EXPIRE => '100 days',
-		]);
-
-		return $movies;
-
-	}
-
-	public function getBbc21CenturyList() {
-
-		$cache = $this->getCache('bbcList');
-		$data = $cache->load('completeList');
-		if (!$data) {
-			$data = $this->prepareBbc21CenturyList();
-		}
-
-		return $data;
+		return $this->decorateMovies($movies);
 
 	}
 
@@ -220,44 +168,21 @@ class MoviesListModel {
 		}
 
 		$movies = [];
-		foreach ($content as $line) {
+		foreach ($content as $key => $line) {
 
 			preg_match('~^([0-9]+)..([^\(]*) \((.*)\,.([0-9]{4})\)~i', $line, $matches);
 
 			$movies[] = [
-				'bbcComediesOrder' => $matches[1],
-				'bbcComediesTitle' => $matches[2],
-				'bbcComediesYear' => $matches[4],
+				'originalId' => $key,
+				'originalOrder' => $matches[1],
+				'originalTitle' => $matches[2],
+				'originalYear' => $matches[4],
+				'origin' => self::BBC_TOP_COMEDIES_LIST,
 			];
 
 		}
+		return $this->decorateMovies($movies);
 
-		// Walk through and check on theMovieDb
-		foreach ($movies as $id => $movie) {
-			$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['bbcComediesTitle'], $movie['bbcComediesYear']);
-			if (!$tMDMovie) {
-				dump('Can\'t load:', $movie);
-			}
-			$movies[$id] = $tMDMovie + $movie;
-		}
-
-		$cache = $this->getCache('bbcList');
-		// Save into DB or JSON or Cache
-		$cache->save('completeListComedies', $movies, [
-			$cache::EXPIRE => '100 days',
-		]);
-
-		return $movies;
-	}
-
-	public function getBbcComediesList() {
-		$cache = $this->getCache('bbcList');
-		$data = $cache->load('completeListComedies');
-		if (!$data) {
-			$data = $this->prepareBbcComediesList();
-		}
-
-		return $data;
 	}
 
 	/**
@@ -287,20 +212,37 @@ class MoviesListModel {
 		foreach ($matches[2] as $key => $title) {
 
 			$movies[$key] = [
-				'msbdId' => $key + 1,
-				'msbdTitle' => html_entity_decode(trim($title)),
-				'msbdOriginalTitle' => trim($matches[4][$key]),
-				'msbdYear' => trim($matches[6][$key]),
+				'originalId' => $key + 1,
+				'originalOrder' => $key + 1,
+				'originalTitle' => html_entity_decode(trim($title)),
+				'originalOriginalTitle' => trim($matches[4][$key]),
+				'originalYear' => trim($matches[6][$key]),
+				'origin' => self::MSBD_LIST,
 			];
 		}
 
 		$movies = array_reverse($movies);
+		return $this->decorateMovies($movies);
+
+	}
+
+	/**
+	 * @param array $movies
+	 * @return array
+	 */
+	protected function decorateMovies(array $movies): array {
 
 		// Walk through and check on theMovieDb
 		foreach ($movies as $id => $movie) {
-			$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['msbdTitle'], $movie['msbdYear']);
-			if (!$tMDMovie && $movie['msbdOriginalTitle']) {
-				$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['msbdOriginalTitle'], $movie['msbdYear']);
+			$tMDMovie = null;
+			if (isset($movie['origin']) && $movie['origin'] == self::IMDB_LIST) {
+				$tMDMovie = $this->theMovieDbApi->findOneMovie($movie['originalId']);
+			}
+			if (!$tMDMovie) {
+				$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['originalTitle'], $movie['originalYear']);
+			}
+			if (!$tMDMovie && !empty($movie['originalOriginalTitle'])) {
+				$tMDMovie = $this->theMovieDbApi->searchMovieByNameAndYear($movie['originalOriginalTitle'], $movie['originalYear']);
 			}
 
 			if (!$tMDMovie) {
@@ -311,28 +253,6 @@ class MoviesListModel {
 		}
 
 		return $movies;
-
-	}
-
-	/**
-	 * @return array
-	 */
-	public function getMustSeeBeforeDieList(): array {
-
-		$cache = $this->getCache('msbdList');
-
-		$data = $cache->load('completeList');
-		if (!$data) {
-
-			$data = $this->prepareMustSeeBeforeDieList();
-			// Save into DB or JSON or Cache
-			$cache->save('completeList', $data, [
-				$cache::EXPIRE => '10 days',
-			]);
-
-		}
-
-		return $data;
 
 	}
 
